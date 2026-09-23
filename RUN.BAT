@@ -1,1 +1,0 @@
-"C:\Users\Super\Documents\Emulation\GB-GBC\Emulators\bgb\bgb.exe" "C:\Users\Super\Documents\Programming\GB-GBC\Tools\IDEs\rgbds-win64\NYANTO\NYANTO.GB"
