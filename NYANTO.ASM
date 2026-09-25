@@ -335,7 +335,7 @@ GetTracks:
 	;When finished
 	jr z, .LoadSongRet
 
-.NextTrack:
+.NextTrack
 	;Advance channel
 	ld hl, CurTrack
 	inc [hl]
@@ -346,13 +346,13 @@ GetTracks:
 	ld e, l
 	jr GetTracks
 
-.LoadSongRet:
+.LoadSongRet
 	;Return from routine
 	pop de
 	pop bc
 	ret
 
-.InitTrackRAM:
+.InitTrackRAM
 	;Get song number
 	ld hl, $00
 	add hl, de
@@ -368,7 +368,7 @@ GetTracks:
 	inc bc
 	jr .NextTrack
 
-.InitTrackRAM2:
+.InitTrackRAM2
 	;Get pointer from current song
 	ld h, b
 	ld l, c
@@ -489,7 +489,7 @@ PlayAudio:
 	sub %00010001
 	ld [hl], a
 
-.PlayAudio2:
+.PlayAudio2
 	call CheckAllTracks
 	jp OutputTracks
 
@@ -1030,7 +1030,7 @@ ProcNextVibrato:
 	ld [hl], a
 	jr ProcNextVibrato
 
-.ProcNextVibrato2:
+.ProcNextVibrato2
 	;Check if value is positive or negative from upper 4 bits
 	push af
 	swap a
@@ -1041,7 +1041,7 @@ ProcNextVibrato:
 	;If negative
 	or %11110000
 
-.ProcNextVibrato3:
+.ProcNextVibrato3
 	;Set vibrato value
 	ld hl, $1C
 	add hl, de
@@ -1065,7 +1065,7 @@ NextCommand:
 	ld c, a
 	ld b, [hl]
 
-.NextCommand2:
+.NextCommand2
 	;Get next byte from channel pointer
 	ld a, [bc]
 	cp $D0
@@ -1077,7 +1077,7 @@ NextCommand:
 	;Repeat
 	jr .NextCommand2
 
-.NoteOrRest:
+.NoteOrRest
 	;Check if track is 3 (music 4)
 	ld a, [CurTrackCheck]
 	cp 3
@@ -1254,10 +1254,10 @@ ProcDelay:
 	ld a, 1
 
 ;XOR and AND value to lowest 2 bits (for envelope)
-.ProcDelay_2:
+.ProcDelay_2
 	xor %00000011
 
-.ProcDelay_3:
+.ProcDelay_3
 	and %00000011
 	ld [hl], a
 	;Reset vibrato step and envelope sequence position to FF
@@ -1368,7 +1368,7 @@ ProcNoteLen2:
 	;If so, then set to maximum speed value
 	jr z, ProcNoteLenMax
 
-.Loc_45A4:
+ProcNoteLen3:
 
 	;Otherwise, check if less than speed
 	cp [hl]
@@ -1584,7 +1584,7 @@ VCMDTab:
 	dw EventEnd                  ;$FF
 
 EventOctave:
-	;Set the current octave (0-7)
+;Set the current octave (0-7)
 	;Get lower 3 bits of command byte
 	ld a, [bc]
 	and %00000111
@@ -1594,8 +1594,8 @@ EventOctave:
 	jr StoreVal
 
 EventDutyVol:
-	;Set duty/volume
-	;Parameters: xxxxxxxx (x = value)
+;Set duty/volume
+;Parameters: xxxxxxxx (x = value)
 	inc bc
 	;If track is SFX 4, then perform separate handler
 	ld a, [CurTrackCheck]
@@ -1623,8 +1623,8 @@ EventDutyVol:
 	jr StoreVal
 
 EventDecay:
-	;Set decay
-	;Parameters: xxxxxxxx (x = value)
+;Set decay
+;Parameters: xxxxxxxx (x = value)
 	ld hl, $0D
 	add hl, de
 	inc bc
@@ -1633,15 +1633,16 @@ EventDecay:
 StoreVal:
 	ld [hl], a
 
+EventNop:
 ;Do nothing but skip a byte
 ;Parameters: -------- (- = unused)
-EventNop:
+NextByte:
 	inc bc
 	ret
 
 EventSweep:
-	;Set sweep
-	;Parameters: xxxxxxxx (x = value)
+;Set sweep
+;Parameters: xxxxxxxx (x = value)
 	;Load parameter in RAM
 	ld hl, $02
 	add hl, de
@@ -1652,8 +1653,8 @@ EventSweep:
 	ret
 
 EventVibrato:
-	;Set vibrato
-	;Parameters: xxxxxxxx (x = value)
+;Set vibrato
+;Parameters: xxxxxxxx (x = value)
 	;First, get note envelope length from upper 4 bits
 	inc bc
 	ld a, [bc]
@@ -1662,7 +1663,7 @@ EventVibrato:
 	;Get the channel speed here, then enter ProcNoteLen past its own set-up
 	ld hl, $0B
 	add hl, de
-	call ProcNoteLen2.Loc_45A4
+	call ProcNoteLen3
 	;Then, get vibrato
 	ld hl, $0E
 	add hl, de
@@ -1690,8 +1691,8 @@ StorePtr:
 	ret
 
 EventTranspose:
-	;Set transpose (per-channel)
-	;Parameters: xxxxxxxx (x = value, signed)
+;Set transpose (per-channel)
+;Parameters: xxxxxxxx (x = value, signed)
 	;Load parameter in RAM
 	ld hl, $03
 	add hl, de
@@ -1702,22 +1703,22 @@ EventTranspose:
 	ret
 
 EventWaveform:
-	;Set waveform
-	;Parameters: xxxxxxxx (x = value)
+;Set waveform
+;Parameters: xxxxxxxx (x = value)
 	;Check current track and set its respective waveform
 	ld a, [CurTrackCheck]
 	cp 2
 	jr z, .EventWaveform2
 	cp 6
 	;If neither channel 3 tracks, then do nothing
-	jr nz, EventNop
+	jr nz, NextByte
 	inc bc
 	ld a, [bc]
 	ld [WaveformSFX], a
 	inc bc
 	ret
 
-.EventWaveform2:
+.EventWaveform2
 	inc bc
 	ld a, [bc]
 	ld [WaveformMus], a
@@ -1725,8 +1726,8 @@ EventWaveform:
 	ret
 
 EventEnvDecay:
-	;Set duty/volume and decay 2/3
-	;Parameters: xyyyyyyy (zzzzzzzz aaaaaaaa)  (x = if set, z and a are used, z = decay 2, a = decay 3)
+;Set duty/volume and decay 2/3
+;Parameters: xyyyyyyy (zzzzzzzz aaaaaaaa)  (x = if set, z and a are used, z = decay 2, a = decay 3)
 	inc bc
 
 GetEnvVal:
@@ -1769,8 +1770,8 @@ GetDecay:
 	ret
 
 EventTuning:
-	;Set tuning
-	;Parameters: xxxxxxxx (x = relative pitch, signed)
+;Set tuning
+;Parameters: xxxxxxxx (x = relative pitch, signed)
 	;Load parameter in RAM
 	ld hl, $04
 	add hl, de
@@ -1781,8 +1782,8 @@ EventTuning:
 	ret
 
 EventEnvVal:
-	;Set envelope value
-	;Parameters: xxxxxxxx (x = value)
+;Set envelope value
+;Parameters: xxxxxxxx (x = value)
 	;Load parameter in RAM
 	ld hl, $11
 	add hl, de
@@ -1793,8 +1794,8 @@ EventEnvVal:
 	ret
 
 EventDecay2:
-	;Set secondary decay
-	;Parameters: xxxxxxxx (x = value)
+;Set secondary decay
+;Parameters: xxxxxxxx (x = value)
 	;Load parameter in RAM
 	ld hl, $12
 	add hl, de
@@ -1805,8 +1806,8 @@ EventDecay2:
 	ret
 
 EventDecay3:
-	;Set tertiary decay
-	;Parameters: xxxxxxxx (x = value)
+;Set tertiary decay
+;Parameters: xxxxxxxx (x = value)
 	;Load parameter in RAM
 	ld hl, $13
 	add hl, de
@@ -1817,8 +1818,8 @@ EventDecay3:
 	ret
 
 EventFinalVol:
-	;Set final channel volume step
-	;Parameters: xxxxxxxx (x = value)
+;Set final channel volume step
+;Parameters: xxxxxxxx (x = value)
 	;Load parameter in RAM
 	ld hl, $05
 	add hl, de
@@ -1829,8 +1830,8 @@ EventFinalVol:
 	ret
 
 EventSpeed:
-	;Set channel speed
-	;Parameters: xxxxxxxx (x = value)
+;Set channel speed
+;Parameters: xxxxxxxx (x = value)
 	;Load parameter in RAM
 	ld hl, $0B
 	add hl, de
@@ -1841,9 +1842,9 @@ EventSpeed:
 	ret
 
 EventMacro1:
-	;Go to macro (subroutine) (1)
-	;Parameters: xxxxxxxx xxxxxxxx (X = position, absolute)
-	;(NOTE: 1 level only)
+;Go to macro (subroutine) (1)
+;Parameters: xxxxxxxx xxxxxxxx (X = position, absolute)
+;(NOTE: 1 level only)
 	;Get pointer from 2 parameters
 	inc bc
 	ld a, [bc]
@@ -1864,9 +1865,9 @@ EventMacro1:
 	ret
 
 EventMacro2:
-	;Go to macro (subroutine) (2)
-	;Parameters: xxxxxxxx xxxxxxxx (X = position, absolute)
-	;(NOTE: 1 level only)
+;Go to macro (subroutine) (2)
+;Parameters: xxxxxxxx xxxxxxxx (X = position, absolute)
+;(NOTE: 1 level only)
 	;Get pointer from 2 parameters
 	inc bc
 	ld a, [bc]
@@ -1887,7 +1888,7 @@ EventMacro2:
 	ret
 
 EventMacro1Ret:
-	;Return from macro (subroutine) (1)
+;Return from macro (subroutine) (1)
 	;Go to position in RAM
 	ld hl, $26
 	add hl, de
@@ -1897,7 +1898,7 @@ EventMacro1Ret:
 	ret
 
 EventMacro2Ret:
-	;Return from macro (subroutine) (2)
+;Return from macro (subroutine) (2)
 	;Go to position in RAM
 	ld hl, $28
 	add hl, de
@@ -1907,8 +1908,8 @@ EventMacro2Ret:
 	ret
 
 EventRepeat1Start:
-	;Start repeat (1) after command
-	;(NOTE: 1 level only)
+;Start repeat (1) after command
+;(NOTE: 1 level only)
 	;Load pointer in RAM
 	inc bc
 	ld hl, $22
@@ -1924,8 +1925,8 @@ EventRepeat1Start:
 	ret
 
 EventRepeat2Start:
-	;Start repeat (2) after command
-	;(NOTE: 1 level only)
+;Start repeat (2) after command
+;(NOTE: 1 level only)
 	;Load pointer in RAM
 	inc bc
 	ld hl, $24
@@ -1941,8 +1942,8 @@ EventRepeat2Start:
 	ret
 
 EventRepeat1End:
-	;End of repeat (1) - jump to start
-	;Parameters: xxxxxxxx (x = times to repeat, 0 = infinite)
+;End of repeat (1) - jump to start
+;Parameters: xxxxxxxx (x = times to repeat, 0 = infinite)
 	;Check if times parameter is 0
 	inc bc
 	ld a, [bc]
@@ -1964,7 +1965,7 @@ EventRepeat1End:
 	inc [hl]
 
 ;Go to repeat start
-.EventRepeat1End_GoBack:
+.EventRepeat1End_GoBack
 	ld hl, $22
 	add hl, de
 	ld a, [hl+]
@@ -1975,11 +1976,11 @@ EventRepeat1End:
 ;Reset repeat count and continue ahead
 EventRepeatEnd_Done:
 	ld [hl], 0
-	jp EventNop
+	jp NextByte
 
 EventRepeat2End:
-	;End of repeat (2) - jump to start
-	;Parameters: xxxxxxxx (x = times to repeat, 0 = infinite)
+;End of repeat (2) - jump to start
+;Parameters: xxxxxxxx (x = times to repeat, 0 = infinite)
 	;Check if times parameter is 0
 	inc bc
 	ld a, [bc]
@@ -2001,7 +2002,7 @@ EventRepeat2End:
 	inc [hl]
 
 ;Go to repeat start
-.EventRepeat2End_GoBack:
+.EventRepeat2End_GoBack
 	ld hl, $24
 	add hl, de
 	ld a, [hl+]
@@ -2010,7 +2011,7 @@ EventRepeat2End:
 	ret
 
 EventEnd:
-	;End of track
+;End of track
 	;Get channel mask and add to output
 	ld a, [CurTrackCheck]
 	add LOW(ChanMaskVals)
@@ -2036,14 +2037,14 @@ EventEnd:
 	cp 3
 	jr nz, .EventEnd_DecayVol0
 
-.EventEnd_DecayVol8:
+.EventEnd_DecayVol8
 	ld a, 8
 	jr .EventEnd_2
 
-.EventEnd_DecayVol0:
+.EventEnd_DecayVol0
 	xor a
 
-.EventEnd_2:
+.EventEnd_2
 	;Set decay
 	ld hl, $0D
 	add hl, de
@@ -2083,7 +2084,7 @@ EventEnd:
 	pop hl
 	ret
 
-.EventEnd_ResetSweep:
+.EventEnd_ResetSweep
 	;Reset sweep
 	ld a, %00001000
 	ldh [rNR10], a
@@ -2441,9 +2442,10 @@ OutputTracks:
 	;Otherwise, check if copy register variable is the same as register value
 	ld a, [de]
 	cp [hl]
-	jr z, .Loc_49B4
+	;If so, then increase values
+	jr z, .IncVals
 
-.SetRegVal:
+.SetRegVal
 	;Set temporary copy variable to register value
 	ld a, [hl]
 	ld [de], a
@@ -2451,7 +2453,7 @@ OutputTracks:
 	ldh [c], a
 	ldh [c], a
 
-.Loc_49B4:
+.IncVals
 	inc l
 	inc e
 	inc c
@@ -2597,9 +2599,9 @@ OutputRegTrig:
 	;Otherwise, check if copy register variable is the same as register value
 	ld a, [de]
 	cp [hl]
-	jr z, OutputReg2.Loc_4A7B
+	jr z, OutputReg2IncVals
 
-.OutputRegTrig_2:
+.OutputRegTrig_2
 	;Get next register value from RAM
 	ld a, [hl+]
 	;Copy to copy register in RAM
@@ -2623,8 +2625,8 @@ OutputReg:
 	;Get copy value and compare to main register value
 	ld a, [de]
 	cp [hl]
-	;If same, then return
-	jr z, OutputReg2.Loc_4A7B
+	;If same, then increase values and return
+	jr z, OutputReg2IncVals
 
 ;Otherwise, load to main register value and actual register
 OutputReg2:
@@ -2632,7 +2634,8 @@ OutputReg2:
 	ld [de], a
 	ldh [c], a
 
-.Loc_4A7B:
+;Increase values
+OutputReg2IncVals:
 	inc l
 	inc e
 	inc c
@@ -2648,10 +2651,10 @@ OutputRegWithTrig:
 	;Otherwise, check if main value is the same
 	cp [hl]
 	;If so, then return
-	jr z, OutputReg2.Loc_4A7B
+	jr z, OutputReg2IncVals
 
 ;Otherwise, output new value
-.OutputRegWithTrig2:
+.OutputRegWithTrig2
 	ld a, [hl]
 	ldh [c], a
 	and %00000111
@@ -2797,6 +2800,7 @@ ClearCh4:
 	;Check if channel is on
 	ldh a, [rNR52]
 	bit 3, a
+	;If not, then return
 	jr z, AudioOffRet
 	xor a
 	;Clear NR41-NR14
